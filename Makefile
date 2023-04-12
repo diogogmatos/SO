@@ -10,7 +10,7 @@ OBJS_C = ${SRC_C:src/client/%.c=obj/client/%.o}
 TARGET_S = server
 TARGET_C = client
 
-LEAKS ?= 0 # check leaks
+LEAKS ?= 0
 
 ifeq ($(SANITIZE), 1)
 	CFLAGS += -fsanitize=leak
