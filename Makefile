@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -pedantic-errors -O3
+CFLAGS = -Wall -Wextra -pedantic-errors -O3 -I include
 
 PATH_S = src/server
 PATH_C = src/client
@@ -43,10 +43,10 @@ $(OBJ_PATH_C)/%.o: $(PATH_C)/%.c
 	@$(CC) $(CFLAGS) -c -o $@ $^ ; echo "[LINKED] $@"
 
 run-server: $(TARGET_S)
-	./$(TARGET_S)
+	./monitor
 
 run-client: $(TARGET_C)
-	./$(TARGET_C)
+	./tracer
 
 clean: # Clean the output files
 	@rm -f monitor tracer $(OBJS_S) $(OBJS_C)
