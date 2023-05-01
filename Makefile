@@ -11,10 +11,10 @@ OBJ_PATH_S = obj/server
 OBJ_PATH_C = obj/client
 
 SRC_S = $(wildcard $(PATH_S)/*.c)
-OBJS_S = ${SRC_S:$(PATH_S)/%.c=$(OBJ_PATH_S)/%.o}
+OBJS_S = ${SRC_S:$(PATH_S)/%.c=$(OBJ_PATH_S)/%.o} obj/global_utils.o
 
 SRC_C = $(wildcard $(PATH_C)/*.c)
-OBJS_C = ${SRC_C:$(PATH_C)/%.c=$(OBJ_PATH_C)/%.o}
+OBJS_C = ${SRC_C:$(PATH_C)/%.c=$(OBJ_PATH_C)/%.o} obj/global_utils.o
 
 TARGET_S = server
 TARGET_C = client
@@ -32,6 +32,12 @@ $(TARGET_S): $(OBJS_S)
 
 $(TARGET_C): $(OBJS_C)
 	@$(CC) $(CFLAGS) $(LIBS) -o tracer $^ ; echo "[COMPILED] $@"
+
+obj/global_utils.o: src/global_utils.c
+	@if [ ! -e $(OBJ_PATH) ]; then\
+		mkdir -p $(OBJ_PATH) ; echo "[CREATED] $(OBJ_PATH)/";\
+	fi
+	@$(CC) $(CFLAGS) $(LIBS) -c -o $@ $^ ; echo "[LINKED] $@"
 
 $(OBJ_PATH_S)/%.o: $(PATH_S)/%.c
 	@if [ ! -e $(OBJ_PATH_S) ]; then\

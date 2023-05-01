@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 
 #include "../../include/client/execute.h"
+#include "../../include/global_utils.h"
 #include "../../include/client/utils.h"
 #include "../../include/message.h" // struct MESSAGE
 
@@ -34,6 +35,9 @@ int execute_u(char *args)
     // parent
     else
     {
+        // write pid to stdout
+        printf("pid: %d\n", pid);
+        
         // open fifo
         int fd = open("fifo", O_WRONLY);
         if (fd == -1)
@@ -42,14 +46,11 @@ int execute_u(char *args)
             return -1;
         }
 
-        // write pid to stdout
-        printf("pid: %d\n", pid);
-
         // add program info to struct
         MESSAGE m_start = {0};
         m_start.pid = pid;
         m_start.type = e_execute;
-        m_start.timestamp = clock();
+        m_start.timestamp = get_timestamp_us();
         strncpy(m_start.message, argv[0], MESSAGE_SIZE);
 
         // write to fifo
@@ -73,7 +74,7 @@ int execute_u(char *args)
         MESSAGE m_end = {0};
         m_end.pid = r;
         m_end.type = e_close_info;
-        m_end.timestamp = clock();
+        m_end.timestamp = get_timestamp_us();
         sprintf(m_end.message, "%s END", argv[0]);
 
         // write to fifo
@@ -85,8 +86,7 @@ int execute_u(char *args)
         }
 
         // execution time
-        clock_t interval = m_end.timestamp - m_start.timestamp;
-        printf("execution time: %g ms\n", (double) interval / CLOCKS_PER_SEC);
+        printf("execution time: %g ms\n", get_execution_time(m_start.timestamp, m_end.timestamp));
 
         close(fd);
     }

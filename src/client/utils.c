@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <sys/time.h>
+#include <time.h>
 #include <string.h>
 
 #include "../../include/client/utils.h"
@@ -23,4 +25,12 @@ char **str_to_array(char *string)
     array[i] = NULL;
 
     return array;
+}
+
+// function to get a timestamp in microseconds
+clock_t get_timestamp_us() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    clock_t timestamp_ms = tv.tv_sec * 1000000 + tv.tv_usec;
+    return timestamp_ms;
 }

@@ -9,6 +9,7 @@
 #include <glib.h>
 
 #include "../../include/message.h" // struct MESSAGE
+#include "../../include/global_utils.h"
 
 typedef struct prog_info
 {
@@ -80,8 +81,7 @@ int main(int argc, char *argv[])
             PROG p = {0};
             p.pid = ph->pid;
             strncpy(p.name, ph->message, MESSAGE_SIZE);
-            clock_t interval = m.timestamp - ph->timestamp;
-            p.execution_time = (double)interval / CLOCKS_PER_SEC;
+            p.execution_time = get_execution_time(ph->timestamp, m.timestamp);
 
             // create file path
             char file_path[strlen(folder_path) + 11];
