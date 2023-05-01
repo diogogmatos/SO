@@ -1,6 +1,6 @@
 .vscode
-*.o
 monitor
 tracer
 
-obj/ # Ignore *.o files folder
+obj/
+log/

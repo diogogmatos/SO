@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
@@ -9,7 +10,7 @@
 
 #include "../../include/client/execute.h"
 #include "../../include/client/utils.h"
-#include "../../include/prog_info.h" // struct PROG
+#include "../../include/message.h" // struct MESSAGE
 
 int execute_u(char *args)
 {
@@ -45,16 +46,14 @@ int execute_u(char *args)
         printf("pid: %d\n", pid);
 
         // add program info to struct
-        PROG p_start;
-        p_start.pid = pid;
-        strcpy(p_start.name, argv[0]);
-        struct timeval tv_start;
-        gettimeofday(&tv_start, NULL);
-        p_start.sec = tv_start.tv_sec;
-        p_start.usec = tv_start.tv_usec;
+        MESSAGE m_start = {0};
+        m_start.pid = pid;
+        m_start.type = e_execute;
+        m_start.timestamp = clock();
+        strncpy(m_start.message, argv[0], MESSAGE_SIZE);
 
         // write to fifo
-        int w = write(fd, &p_start, sizeof(PROG));
+        int w = write(fd, &m_start, sizeof(MESSAGE));
         if (w == -1)
         {
             perror("write start");
@@ -71,16 +70,14 @@ int execute_u(char *args)
         }
 
         // add program close info to struct
-        PROG p_end;
-        p_end.pid = r;
-        strcpy(p_end.name, "exit");
-        struct timeval tv_end;
-        gettimeofday(&tv_end, NULL);
-        p_end.sec = tv_end.tv_sec;
-        p_end.usec = tv_end.tv_usec;
+        MESSAGE m_end = {0};
+        m_end.pid = r;
+        m_end.type = e_close_info;
+        m_end.timestamp = clock();
+        sprintf(m_end.message, "%s END", argv[0]);
 
         // write to fifo
-        w = write(fd, &p_end, sizeof(PROG));
+        w = write(fd, &m_end, sizeof(MESSAGE));
         if (w == -1)
         {
             perror("write end");
@@ -88,9 +85,8 @@ int execute_u(char *args)
         }
 
         // execution time
-        long sec = p_end.sec - p_start.sec;
-        long usec = p_end.usec - p_start.usec;
-        printf("Execution time: %lf ms\n", execution_time(sec, usec));
+        clock_t interval = m_end.timestamp - m_start.timestamp;
+        printf("execution time: %g ms\n", (double) interval / CLOCKS_PER_SEC);
 
         close(fd);
     }
@@ -116,16 +112,11 @@ int quit_server()
     }
 
     // add program info to struct
-    PROG p;
-    p.pid = -1;
-    strcpy(p.name, "quit");
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    p.sec = tv.tv_sec;
-    p.usec = tv.tv_usec;
-
+    MESSAGE m = {0};
+    m.type = e_quit_server;
+    
     // write to fifo
-    int w = write(fd, &p, sizeof(PROG));
+    int w = write(fd, &m, sizeof(MESSAGE));
     if (w == -1)
     {
         perror("write quit");

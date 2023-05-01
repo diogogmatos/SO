@@ -7,23 +7,20 @@
 
 #include "../../include/client/utils.h"
 
-// turns a string into an array of strings, separated by space
-char **str_to_array(char *str)
-{
-    char **array = malloc(sizeof(char *) * BUFSIZ);
-    char *token = strtok(str, " ");
+#define ARRAY_SIZE 1024
 
-    int i = 0;
-    while (token != NULL)
-    {
-        array[i] = token;
-        token = strtok(NULL, " ");
-        i++;
-    }
+// turns a string into an array of strings, separated by space
+char **str_to_array(char *string)
+{
+    char *str = strdup(string);
+
+    char **array = malloc(sizeof(char*) * ARRAY_SIZE);
+
+    int i;
+    for (i = 0; str != NULL; i++)
+        array[i] = strsep(&str, " ");
+
+    array[i] = NULL;
 
     return array;
-}
-
-double execution_time(long sec, long usec) {
-    return sec * 1000 + (double) usec / 1000;
 }

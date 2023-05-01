@@ -1,5 +1,8 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -pedantic-errors -O3 -I include
+CFLAGS = -Wall -Wextra -pedantic-errors -O3 -I include $(shell pkg-config --cflags glib-2.0)
+LIBS = -lm $(shell pkg-config --libs glib-2.0)
+
+LOG = log/*
 
 PATH_S = src/server
 PATH_C = src/client
@@ -25,31 +28,28 @@ endif
 all: $(TARGET_S) $(TARGET_C)
 
 $(TARGET_S): $(OBJS_S)
-	@$(CC) $(CFLAGS) -o monitor $^ ; echo "[COMPILED] $@"
+	@$(CC) $(CFLAGS) $(LIBS) -o monitor $^ ; echo "[COMPILED] $@"
 
 $(TARGET_C): $(OBJS_C)
-	@$(CC) $(CFLAGS) -o tracer $^ ; echo "[COMPILED] $@"
+	@$(CC) $(CFLAGS) $(LIBS) -o tracer $^ ; echo "[COMPILED] $@"
 
 $(OBJ_PATH_S)/%.o: $(PATH_S)/%.c
 	@if [ ! -e $(OBJ_PATH_S) ]; then\
 		mkdir -p $(OBJ_PATH_S) ; echo "[CREATED] $(OBJ_PATH_S)/";\
 	fi
-	@$(CC) $(CFLAGS) -c -o $@ $^ ; echo "[LINKED] $@"
+	@$(CC) $(CFLAGS) $(LIBS) -c -o $@ $^ ; echo "[LINKED] $@"
 
 $(OBJ_PATH_C)/%.o: $(PATH_C)/%.c
 	@if [ ! -e $(OBJ_PATH_C) ]; then\
 		mkdir -p $(OBJ_PATH_C) ; echo "[CREATED] $(OBJ_PATH_C)/";\
 	fi
-	@$(CC) $(CFLAGS) -c -o $@ $^ ; echo "[LINKED] $@"
+	@$(CC) $(CFLAGS) $(LIBS) -c -o $@ $^ ; echo "[LINKED] $@"
 
 run-server: $(TARGET_S)
-	./monitor
+	./monitor "log"
 
 run-client: $(TARGET_C)
 	./tracer
 
 clean: # Clean the output files
-	@rm -f monitor tracer $(OBJS_S) $(OBJS_C)
-	@rmdir $(OBJ_PATH_S)
-	@rmdir $(OBJ_PATH_C)
-	@rmdir obj ; echo "[CLEANED] obj"
+	@rm -f monitor tracer $(OBJS_C) $(OBJS_S) $(LOG) ; echo "[CLEANED]"
