@@ -6,5 +6,5 @@
 
 double get_execution_time(clock_t start, clock_t end)
 {
-    return (double) (end - start) / 1000;
+    return (double) (end - start) / 10e3;
 }

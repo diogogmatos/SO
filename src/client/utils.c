@@ -31,6 +31,6 @@ char **str_to_array(char *string)
 clock_t get_timestamp_us() {
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    clock_t timestamp_ms = tv.tv_sec * 1000000 + tv.tv_usec;
-    return timestamp_ms;
+    clock_t timestamp_us = tv.tv_sec * 10e6 + tv.tv_usec;
+    return timestamp_us;
 }
