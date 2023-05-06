@@ -9,6 +9,12 @@
 
 int main(int argc, char *argv[])
 {
+    if (argc < 2)
+    {
+        perror("Invalid number of arguments");
+        return -1;
+    }
+
     // handle input
     int input_res = handle_input(argv);
     

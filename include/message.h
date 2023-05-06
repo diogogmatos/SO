@@ -6,12 +6,12 @@
 #define MESSAGE_SIZE 240
 
 typedef enum _message_type {
-    e_execute,
+    e_execute_u,
+    e_execute_p,
     e_status,
     e_stats_time,
     e_stats_command,
     e_stats_uniq,
-    e_close_info,
     e_quit_server
 } MESSAGE_TYPE;
 

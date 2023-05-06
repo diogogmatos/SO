@@ -2,7 +2,6 @@
 #define execute_h
 
 int execute_u(char *args);
-int execute_p(char *args);
-int quit_server();
+int execute_p(char *input);
 
 #endif

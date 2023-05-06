@@ -7,7 +7,35 @@
 #include <sys/time.h>
 
 #include "../../include/client/io.h"
+
 #include "../../include/client/execute.h"
+#include "../../include/client/get_status.h"
+#include "../../include/message.h"
+
+int quit_server()
+{
+    // open fifo
+    int fd = open("fifo", O_WRONLY);
+    if (fd == -1)
+    {
+        perror("open fifo");
+        return -1;
+    }
+
+    // add program info to struct
+    MESSAGE m = {0};
+    m.type = e_quit_server;
+    
+    // write to fifo
+    int w = write(fd, &m, sizeof(MESSAGE));
+    if (w == -1)
+    {
+        perror("write quit");
+        return -1;
+    }
+
+    return 0;
+}
 
 int handle_input(char *argv[])
 {
@@ -53,7 +81,12 @@ int handle_input(char *argv[])
     }
     else if (!strcmp(option1, "status"))
     {
-        // modo status
+        int r = get_status();
+        if (r == -1)
+        {
+            perror("get_status()");
+            return -1;
+        }
     }
     else if (!strcmp(option1, "stats-time"))
     {
@@ -82,4 +115,6 @@ int handle_input(char *argv[])
         perror("invalid option1");
         return -1;
     }
+
+    return 0;
 }

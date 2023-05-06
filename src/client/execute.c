@@ -15,7 +15,7 @@
 
 int execute_u(char *args)
 {
-    char **argv = str_to_array(args);
+    char **argv = str_to_array(args, " ", NULL);
 
     int pid;
     
@@ -49,9 +49,9 @@ int execute_u(char *args)
         // add program info to struct
         MESSAGE m_start = {0};
         m_start.pid = pid;
-        m_start.type = e_execute;
+        m_start.type = e_execute_u;
         m_start.timestamp = get_timestamp_us();
-        strncpy(m_start.message, argv[0], MESSAGE_SIZE-1);
+        strncpy(m_start.message, argv[0], MESSAGE_SIZE);
 
         // write to fifo
         int w = write(fd, &m_start, sizeof(MESSAGE));
@@ -73,7 +73,7 @@ int execute_u(char *args)
         // add program close info to struct
         MESSAGE m_end = {0};
         m_end.pid = r;
-        m_end.type = e_close_info;
+        m_end.type = e_execute_u;
         m_end.timestamp = get_timestamp_us();
         sprintf(m_end.message, "%s END", argv[0]);
 
@@ -98,7 +98,7 @@ int execute_u(char *args)
 
 int function (char *args) 
 {    
-    char **argv = str_to_array(args);
+    char **argv = str_to_array(args, " ", NULL);
 
     int i;
     for (i = 0; argv[i] != NULL && strcmp("|", argv[i]); i++);
@@ -168,12 +168,11 @@ int function (char *args)
     }
 
     return 0;
-
 }
 
 int execute_p(char *args)
 {
-    char **argv = str_to_array(args);
+    char **argv = str_to_array(args, " ", NULL);
 
     int pid;
     
@@ -201,9 +200,9 @@ int execute_p(char *args)
         // add program info to struct
         MESSAGE m_start = {0};
         m_start.pid = pid;
-        m_start.type = e_execute;
+        m_start.type = e_execute_p;
         m_start.timestamp = get_timestamp_us();
-        strncpy(m_start.message, argv[0], MESSAGE_SIZE-1);
+        strncpy(m_start.message, argv[0], MESSAGE_SIZE);
 
         // write to fifo
         int w = write(fd, &m_start, sizeof(MESSAGE));
@@ -225,7 +224,7 @@ int execute_p(char *args)
         // add program close info to struct
         MESSAGE m_end = {0};
         m_end.pid = r;
-        m_end.type = e_close_info;
+        m_end.type = e_execute_p;
         m_end.timestamp = get_timestamp_us();
         sprintf(m_end.message, "%s END", argv[0]);
 
@@ -244,31 +243,6 @@ int execute_p(char *args)
     }
 
     free(argv);
-
-    return 0;
-}
-
-int quit_server()
-{
-    // open fifo
-    int fd = open("fifo", O_WRONLY);
-    if (fd == -1)
-    {
-        perror("open fifo");
-        return -1;
-    }
-
-    // add program info to struct
-    MESSAGE m = {0};
-    m.type = e_quit_server;
-    
-    // write to fifo
-    int w = write(fd, &m, sizeof(MESSAGE));
-    if (w == -1)
-    {
-        perror("write quit");
-        return -1;
-    }
 
     return 0;
 }

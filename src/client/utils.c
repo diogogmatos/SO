@@ -12,7 +12,7 @@
 #define ARRAY_SIZE 1024
 
 // turns a string into an array of strings, separated by space
-char **str_to_array(char *string)
+char **str_to_array(char *string, char *delim, int *size)
 {
     char *str = strdup(string);
 
@@ -20,17 +20,11 @@ char **str_to_array(char *string)
 
     int i;
     for (i = 0; str != NULL; i++)
-        array[i] = strsep(&str, " ");
+        array[i] = strsep(&str, delim);
 
     array[i] = NULL;
 
-    return array;
-}
+    *size = i;
 
-// function to get a timestamp in microseconds
-clock_t get_timestamp_us() {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    clock_t timestamp_us = tv.tv_sec * 10e6 + tv.tv_usec;
-    return timestamp_us;
+    return array;
 }
