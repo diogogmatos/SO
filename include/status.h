@@ -1,7 +1,7 @@
 #ifndef status_h
 #define status_h
 
-#include <time.h>
+#define MESSAGE_SIZE 240
 
 typedef struct status {
     int pid;

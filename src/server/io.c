@@ -13,6 +13,7 @@
 #include "../../include/global_utils.h"
 #include "../../include/server/io.h"
 #include "../../include/server/execute.h"
+#include "../../include/server/stats.h"
 
 int send_status(GHashTable *log) {
     // open fifo
@@ -93,17 +94,32 @@ int handle_message(GHashTable *log, MESSAGE m, char *folder_path)
     }
     case e_stats_time:
     {
-        printf("Not implemented!\n");
+        int r = stats_time(folder_path);
+        if (r == -1)
+        {
+            perror("stats_time()");
+            return -1;
+        }
         return 0;
     }
     case e_stats_command:
     {
-        printf("Not implemented!\n");
+        int r = stats_command(folder_path);
+        if (r == -1)
+        {
+            perror("stats_command()");
+            return -1;
+        }
         return 0;
     }
     case e_stats_uniq:
     {
-        printf("Not implemented!\n");
+        int r = stats_uniq(folder_path);
+        if (r == -1)
+        {
+            perror("stats_uniq()");
+            return -1;
+        }
         return 0;
     }
     default:

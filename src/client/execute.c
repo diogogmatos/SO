@@ -15,9 +15,12 @@
 
 int execute_u(char *args)
 {
-    char **argv = str_to_array(args, " ", NULL);
+    int size;
+    char **argv = str_to_array(args, " ", &size);
 
     int pid;
+
+    clock_t start = get_timestamp_us();
     
     // child
     if ((pid = fork()) == 0)
@@ -50,7 +53,7 @@ int execute_u(char *args)
         MESSAGE m_start = {0};
         m_start.pid = pid;
         m_start.type = e_execute_u;
-        m_start.timestamp = get_timestamp_us();
+        m_start.timestamp = start;
         strncpy(m_start.message, argv[0], MESSAGE_SIZE);
 
         // write to fifo
@@ -97,8 +100,9 @@ int execute_u(char *args)
 }
 
 int function (char *args) 
-{    
-    char **argv = str_to_array(args, " ", NULL);
+{
+    int size;    
+    char **argv = str_to_array(args, " ", &size);
 
     int i;
     for (i = 0; argv[i] != NULL && strcmp("|", argv[i]); i++);
@@ -172,7 +176,8 @@ int function (char *args)
 
 int execute_p(char *args)
 {
-    char **argv = str_to_array(args, " ", NULL);
+    int size;
+    char **argv = str_to_array(args, " ", &size);
 
     int pid;
     

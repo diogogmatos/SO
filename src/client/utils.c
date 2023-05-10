@@ -28,3 +28,14 @@ char **str_to_array(char *string, char *delim, int *size)
 
     return array;
 }
+
+// turns an array of strings into an array of ints
+int *str_array_to_int_array(char **array, int size)
+{
+    int *int_array = malloc(sizeof(int) * size);
+
+    for (int i = 0; i < size; i++)
+        int_array[i] = atoi(array[i]);
+
+    return int_array;
+}

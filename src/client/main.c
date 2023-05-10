@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     }
 
     // handle input
-    int input_res = handle_input(argv);
+    int input_res = handle_input(argc, argv);
     
     if (input_res == -1)
     {
