@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 #include "../../include/client/io.h"
 
