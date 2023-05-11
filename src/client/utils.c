@@ -11,12 +11,15 @@
 
 #define ARRAY_SIZE 1024
 
-// turns a string into an array of strings, separated by space
+// turns a string into an array of strings, separated by the delimiters
 char **str_to_array(char *string, char *delim, int *size)
 {
     char *str = strdup(string);
 
     char **array = malloc(sizeof(char*) * ARRAY_SIZE);
+        
+    for (int i = 0; i < ARRAY_SIZE; i++) 
+        array[i] = NULL;
 
     int i;
     for (i = 0; str != NULL; i++)
