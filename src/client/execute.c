@@ -99,15 +99,12 @@ int execute_u(char *args)
     return 0;
 }
 
-int function (char *args) 
+int function (char **argv, int pid_in) 
 {
-    int size;    
-    char **argv = str_to_array(args, " ", &size);
-
     int i;
     for (i = 0; argv[i] != NULL && strcmp("|", argv[i]); i++);
 
-    if (!strcmp("|", argv[i]))
+    if (argv[i] != NULL)
     {
         argv[i] = NULL;
 
@@ -121,32 +118,111 @@ int function (char *args)
             return -1;
         }
 
-        close(fildes[0]);
-
-        int status_dup = dup2(fildes[1], 1);
-
-        if (status_dup == -1) 
-        {
-            close(fildes[1]);
-            perror("dup");
-            return -1;
-        }
-
-        int pid;
+        int pid = fork();
 
         // child
-        if ((pid = fork()) == 0)
+        if (pid == 0)
         {
-            function(args+i+1);
-
+            // não iremos usar o pipe de writing neste child
             close(fildes[1]);
 
-            exit(0);
+            // passamos como argumeno o pipe de reading criado
+            function(&argv[i+1], fildes[0]);
+
+            // estamos no child. o child não pode esperar pelo pai.
+            // por isso, o wait não funciona aqui
+            // o flow irá prosseguir quando o function acabar
+
+            // int status;
+            // int r = wait(&status);
+            // if (r == -1)
+            // {
+            //     perror("wait");
+            //     return -1;
+            // }
+            
+            // não irá mais ser usado o pipe de reading
+            close(fildes[1]);
+
         }
         // parent
         else
         {
-            int exec_res = execvp(argv[0], argv);
+            // trocar o stdin pelo pipe de reading dado
+            int in_dup_status = dup2(0, pid_in);
+
+            if (in_dup_status == -1) 
+            {
+                perror("dup");
+                return -1;
+            }
+
+            // trocar o stdout pelo pipe de writing criado
+            int out_dup_status = dup2(1, fildes[1]);
+
+            if (out_dup_status == -1) 
+            {
+                perror("dup");
+                return -1;
+            }
+
+            int exec_res = execvp(argv[0], &argv[0]);
+
+            if (exec_res == -1)
+            {
+                perror("execvp");
+            }
+
+            // quando o programa termina os field descriptors
+            // são fechados automaticamente
+
+            // close(fildes[0]);
+            // close(fildes[1]);
+
+            exit(0);
+
+        }
+
+    }
+    else 
+    {
+
+        int pid = fork();
+
+        // parent
+        if (pid != 0)
+        {
+            // como agora estamos na última chamada recursiva
+            // todas as outras terão de esperar que este wait responda
+            // (porque este pedaço de código faz parte do main flow do programa)
+            // que pode existir porque agora estamos no parent
+            // que pode acontecer porque agora não nos temos de preocupar 
+            // com parent-child read-writes que acontece acima 
+
+            int status;
+            int r = wait(&status);
+            if (r == -1)
+            {
+                perror("wait");
+                return -1;
+            }
+        }
+        // parent
+        else
+        {
+
+            // trocar o stdin pelo pipe de reading dado
+            int in_dup_status = dup2(0, pid_in);
+
+            if (in_dup_status == -1) 
+            {
+                perror("dup");
+                return -1;
+            }
+
+            // o stdout não é alterado
+
+            int exec_res = execvp(argv[0], &argv[0]);
 
             if (exec_res == -1)
             {
@@ -155,20 +231,7 @@ int function (char *args)
 
             exit(0);
         }
-
-        close(fildes[1]);
-
-    }
-    else 
-    {
-        int exec_res = execvp(argv[0], argv);
-
-        if (exec_res == -1)
-        {
-            perror("execvp");
-        }
-
-        exit(0);
+        
     }
 
     return 0;
@@ -179,12 +242,12 @@ int execute_p(char *args)
     int size;
     char **argv = str_to_array(args, " ", &size);
 
-    int pid;
+    int pid = fork();
     
     // child
-    if ((pid = fork()) == 0)
+    if (pid == 0)
     {
-        function(args);
+        function(argv, 0);
 
         exit(0);
     }
