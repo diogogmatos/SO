@@ -68,18 +68,14 @@ int handle_message(GHashTable *log, MESSAGE m, char *folder_path)
     switch (m.type)
     {
     case e_execute_u:
+    case e_execute_p:
     {
-        int r = execute_u(log, m, folder_path);
+        int r = execute(log, m, folder_path);
         if (r == -1)
         {
             perror("execute_u()");
             return -1;
         }
-        return 0;
-    }
-    case e_execute_p:
-    {
-        printf("Not implemented!\n");
         return 0;
     }
     case e_status:

@@ -13,7 +13,7 @@
 #include "../../include/global_utils.h"
 #include "../../include/server/execute.h"
 
-int execute_u(GHashTable *log, MESSAGE m, char *folder_path)
+int execute(GHashTable *log, MESSAGE m, char *folder_path)
 {
     // if prog is not in hash table, add it
     if (!g_hash_table_contains(log, &m.pid))

@@ -21,7 +21,7 @@ int execute_u(char *args)
     int pid;
 
     clock_t start = get_timestamp_us();
-    
+
     // child
     if ((pid = fork()) == 0)
     {
@@ -40,7 +40,7 @@ int execute_u(char *args)
     {
         // write pid to stdout
         printf("pid: %d\n", pid);
-        
+
         // open fifo
         int fd = open("fifo", O_WRONLY);
         if (fd == -1)
@@ -78,7 +78,7 @@ int execute_u(char *args)
         m_end.pid = r;
         m_end.type = e_execute_u;
         m_end.timestamp = get_timestamp_us();
-        sprintf(m_end.message, "%s END", argv[0]);
+        sprintf(m_end.message, "%s - END", argv[0]);
 
         // write to fifo
         w = write(fd, &m_end, sizeof(MESSAGE));
@@ -95,144 +95,6 @@ int execute_u(char *args)
     }
 
     free(argv);
-
-    return 0;
-}
-
-int function (char **argv, int pid_in) 
-{
-    int i;
-    for (i = 0; argv[i] != NULL && strcmp("|", argv[i]); i++);
-
-    if (argv[i] != NULL)
-    {
-        argv[i] = NULL;
-
-        int fildes[2];
-
-        int status_fildes = pipe(fildes);
-
-        if (status_fildes == -1) 
-        {
-            perror("pipe");
-            return -1;
-        }
-
-        int pid = fork();
-
-        // child
-        if (pid == 0)
-        {
-            // não iremos usar o pipe de writing neste child
-            close(fildes[1]);
-
-            // passamos como argumeno o pipe de reading criado
-            function(&argv[i+1], fildes[0]);
-
-            // estamos no child. o child não pode esperar pelo pai.
-            // por isso, o wait não funciona aqui
-            // o flow irá prosseguir quando o function acabar
-
-            // int status;
-            // int r = wait(&status);
-            // if (r == -1)
-            // {
-            //     perror("wait");
-            //     return -1;
-            // }
-            
-            // não irá mais ser usado o pipe de reading
-            close(fildes[1]);
-
-        }
-        // parent
-        else
-        {
-            // trocar o stdin pelo pipe de reading dado
-            int in_dup_status = dup2(0, pid_in);
-
-            if (in_dup_status == -1) 
-            {
-                perror("dup");
-                return -1;
-            }
-
-            // trocar o stdout pelo pipe de writing criado
-            int out_dup_status = dup2(1, fildes[1]);
-
-            if (out_dup_status == -1) 
-            {
-                perror("dup");
-                return -1;
-            }
-
-            int exec_res = execvp(argv[0], &argv[0]);
-
-            if (exec_res == -1)
-            {
-                perror("execvp");
-            }
-
-            // quando o programa termina os field descriptors
-            // são fechados automaticamente
-
-            // close(fildes[0]);
-            // close(fildes[1]);
-
-            exit(0);
-
-        }
-
-    }
-    else 
-    {
-
-        int pid = fork();
-
-        // parent
-        if (pid != 0)
-        {
-            // como agora estamos na última chamada recursiva
-            // todas as outras terão de esperar que este wait responda
-            // (porque este pedaço de código faz parte do main flow do programa)
-            // que pode existir porque agora estamos no parent
-            // que pode acontecer porque agora não nos temos de preocupar 
-            // com parent-child read-writes que acontece acima 
-
-            int status;
-            int r = wait(&status);
-            if (r == -1)
-            {
-                perror("wait");
-                return -1;
-            }
-        }
-        // parent
-        else
-        {
-
-            // trocar o stdin pelo pipe de reading dado
-            int in_dup_status = dup2(0, pid_in);
-
-            if (in_dup_status == -1) 
-            {
-                perror("dup");
-                return -1;
-            }
-
-            // o stdout não é alterado
-
-            int exec_res = execvp(argv[0], &argv[0]);
-
-            if (exec_res == -1)
-            {
-                perror("execvp");
-            }
-
-            exit(0);
-        }
-        
-    }
 
     return 0;
 }
@@ -240,77 +102,178 @@ int function (char **argv, int pid_in)
 int execute_p(char *args)
 {
     int size;
-    char **argv = str_to_array(args, " ", &size);
+    printf("%s\n", args);
+    char **progs = str_to_array(args, "|", &size);
+    for (int i=0; i < size; i++)
+        remove_leading_trailing_spaces(progs[i]);
 
-    int pid = fork();
-    
-    // child
-    if (pid == 0)
+    // create file descriptors
+    int fds[size][2];
+
+    // create pipes
+    for (int i=0; i < size; i++)
+        pipe(fds[i]);
+
+    // create array to store pids
+    int pids[size];
+
+    // memorize stdin and stdout
+    int input = dup(0);
+    int output = dup(1);
+
+    clock_t start = get_timestamp_us();
+
+    for (int i=0; i < size; i++)
     {
-        function(argv, 0);
+        int pid;
+        int argc;
+        char **args = str_to_array(progs[i], " ", &argc);
 
-        exit(0);
+        printf("%s\n", args[0]);
+
+        if ((pid = fork()) == 0)
+        {
+            if (i == 0) // first program
+            {
+                // redirect STDOUT to pipe
+                dup2(fds[i][1], output);
+
+                // close unused read end
+                close(fds[i][0]);
+            }
+            else if (i == size-1) // final program
+            {
+                // redirect STDIN to pipe
+                dup2(fds[i-1][0], input);
+
+                // close unused write end
+                close(fds[i-1][1]);
+
+                dup2(output, 1);
+            }
+            else // middle program
+            {
+                // redirect STDIN to pipe
+                dup2(fds[i-1][0], input);
+
+                // close unused write end
+                close(fds[i-1][1]);
+
+                // redirect STDOUT to pipe
+                dup2(fds[i][1], output);
+
+                // close unused read end
+                close(fds[i][0]);
+            }
+
+            // execute
+            int exec_res = execvp(args[0], args);
+            if (exec_res == -1)
+            {
+                perror("execvp");
+                return -1;
+            }
+
+            exit(0);
+        }
+        else
+        {
+            // store pid
+            pids[i] = pid;
+        }
+
+        // free args
+        free(args);
     }
-    // parent
-    else
+
+    // close all pipe file descriptors in the parent process
+    for (int i = 0; i < size; i++)
     {
-        // write pid to stdout
-        printf("pid: %d\n", pid);
-        
-        // open fifo
-        int fd = open("fifo", O_WRONLY);
-        if (fd == -1)
-        {
-            perror("open fifo");
-            return -1;
-        }
+        close(fds[i][0]);
+        close(fds[i][1]);
+    }
 
-        // add program info to struct
-        MESSAGE m_start = {0};
-        m_start.pid = pid;
-        m_start.type = e_execute_p;
-        m_start.timestamp = get_timestamp_us();
-        strncpy(m_start.message, argv[0], MESSAGE_SIZE);
+    // restore stdin and stdout
+    dup2(input, 0);
+    dup2(output, 1);
+    close(input);
+    close(output);
 
-        // write to fifo
-        int w = write(fd, &m_start, sizeof(MESSAGE));
-        if (w == -1)
-        {
-            perror("write start");
-            return -1;
-        }
+    // write pid to stdout
+    printf("pid: %d\n", pids[0]);
 
-        // wait for child to finish
+    // add program start info to struct
+    MESSAGE m_start = {0};
+    m_start.pid = pids[0];
+    m_start.type = e_execute_p;
+    m_start.timestamp = start;
+
+    char *message = malloc(MESSAGE_SIZE * sizeof(char));
+    for (int i=0; i < size; i++)
+    {
+        int argc;
+        char **args = str_to_array(progs[i], " ", &argc);
+
+        if (i > 0) strcat(message, " | ");
+
+        message = strcat(message, args[0]);
+
+        free(args);
+    }
+
+    strncpy(m_start.message, message, MESSAGE_SIZE);
+
+    // open fifo
+    int fd = open("fifo", O_WRONLY);
+    if (fd == -1)
+    {
+        perror("open fifo");
+        return -1;
+    }
+
+    // write start to fifo
+    int w = write(fd, &m_start, sizeof(MESSAGE));
+    if (w == -1)
+    {
+        perror("write start");
+        return -1;
+    }
+
+    // wait for children to finish
+    for (int i=0; i < size; i++)
+    {
         int status;
-        int r = wait(&status);
+        int r = waitpid(pids[i], &status, 0);
         if (r == -1)
         {
-            perror("wait");
+            perror("waitpid");
             return -1;
         }
-
-        // add program close info to struct
-        MESSAGE m_end = {0};
-        m_end.pid = r;
-        m_end.type = e_execute_p;
-        m_end.timestamp = get_timestamp_us();
-        sprintf(m_end.message, "%s END", argv[0]);
-
-        // write to fifo
-        w = write(fd, &m_end, sizeof(MESSAGE));
-        if (w == -1)
-        {
-            perror("write end");
-            return -1;
-        }
-
-        // execution time
-        printf("execution time: %g ms\n", get_execution_time(m_start.timestamp, m_end.timestamp));
-
-        close(fd);
     }
 
-    free(argv);
+    // add program end info to struct
+    MESSAGE m_end = {0};
+    m_end.pid = m_start.pid;
+    m_end.type = e_execute_p;
+    m_end.timestamp = get_timestamp_us();
+    sprintf(m_end.message, "%s - END", message);
+
+    // free message
+    free(message);
+
+    // write end to fifo
+    w = write(fd, &m_end, sizeof(MESSAGE));
+    if (w == -1)
+    {
+        perror("write end");
+        return -1;
+    }
+
+    // close fifo
+    close(fd);
+
+    // free progs
+    free(progs);
 
     return 0;
 }

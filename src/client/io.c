@@ -10,7 +10,6 @@
 #include "../../include/client/io.h"
 
 #include "../../include/client/execute.h"
-#include "../../include/client/get_status.h"
 #include "../../include/message.h"
 #include "../../include/client/stats.h"
 #include "../../include/status.h"
@@ -138,10 +137,10 @@ int handle_input(int argc, char *argv[])
     }
     else if (!strcmp(option1, "status"))
     {
-        int r = get_status();
+        int r = status();
         if (r == -1)
         {
-            perror("get_status()");
+            perror("status()");
             return -1;
         }
     }

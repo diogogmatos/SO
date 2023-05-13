@@ -3,5 +3,6 @@
 
 char **str_to_array(char *string, char *delim, int *size);
 int *str_array_to_int_array(char **array, int size);
+void remove_leading_trailing_spaces(char *str);
 
 #endif
